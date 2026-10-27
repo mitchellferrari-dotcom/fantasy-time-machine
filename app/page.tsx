@@ -123,6 +123,55 @@ export default function Home(){
  },{})).sort((a,b)=>b.score-a.score).slice(0,20);
 
  const record=estimatedRecord(picks);
+ const finalScore=totalPoints(picks);
+ const myRank=submitted ? leaderboard.findIndex(e=>e.name.toLowerCase()===name.trim().toLowerCase() && Math.abs(e.score-finalScore)<0.11)+1 : 0;
+ const challengeText=`I scored ${finalScore.toFixed(1)} PPR points and went ${record.wins}-${record.losses} in Fantasy Time Machine! Can you beat my draft?`;
+ const challengeUrl='https://www.fantasytimemachine.org/';
+ const [shareStatus,setShareStatus]=useState('');
+
+ async function copyChallenge(){
+  try{await navigator.clipboard.writeText(`${challengeText}\n${challengeUrl}`);setShareStatus('Challenge copied!');}
+  catch{setShareStatus('Copy unavailable. Share this link: '+challengeUrl);}
+ }
+
+ async function shareScorecard(){
+  try{
+   const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1500;
+   const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
+   ctx.fillStyle='#14243b';ctx.fillRect(0,0,1080,1500);
+   ctx.fillStyle='#f2c65c';ctx.fillRect(0,0,1080,16);
+   ctx.textBaseline='top';
+   ctx.fillStyle='#f2c65c';ctx.font='bold 35px Arial';ctx.fillText('FANTASY TIME MACHINE',65,75);
+   ctx.fillStyle='#ffffff';ctx.font='bold 66px Arial';ctx.fillText('MY ALL-TIME DRAFT',65,155);
+   ctx.fillStyle='#b8c7dc';ctx.font='28px Arial';ctx.fillText(mode.toUpperCase()+' MODE  •  FULL PPR',65,255);
+   ctx.fillStyle='#f2c65c';ctx.font='bold 90px Arial';ctx.fillText(finalScore.toFixed(1),65,325);
+   ctx.fillStyle='#b8c7dc';ctx.font='27px Arial';ctx.fillText('TOTAL FANTASY POINTS',65,425);
+   ctx.fillStyle='#ffffff';ctx.font='bold 44px Arial';ctx.fillText(`PROJECTED RECORD: ${record.wins}-${record.losses}`,65,505);
+   if(myRank>0){ctx.fillStyle='#f2c65c';ctx.font='bold 31px Arial';ctx.fillText(`TODAY\'S RANK: #${myRank}`,65,575);}
+   ctx.fillStyle='#b8c7dc';ctx.font='bold 26px Arial';ctx.fillText('MY LINEUP',65,650);
+   let y=715;
+   for(const pick of picks){
+    ctx.fillStyle='#263c59';ctx.fillRect(55,y-10,970,76);
+    ctx.fillStyle='#f2c65c';ctx.font='bold 26px Arial';ctx.fillText(pick.slot,75,y+8);
+    ctx.fillStyle='#ffffff';ctx.font='bold 27px Arial';ctx.fillText(`${pick.player.name} (${pick.player.year})`,195,y+8);
+    ctx.fillStyle='#ffffff';ctx.textAlign='right';ctx.font='bold 25px Arial';ctx.fillText(pick.player.points.toFixed(1),1000,y+8);ctx.textAlign='left';
+    y+=86;
+   }
+   ctx.fillStyle='#f2c65c';ctx.font='bold 36px Arial';ctx.fillText('CAN YOU BEAT MY DRAFT?',65,1350);
+   ctx.fillStyle='#ffffff';ctx.font='28px Arial';ctx.fillText('www.fantasytimemachine.org',65,1410);
+   const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/png'));
+   if(!blob)throw new Error('Could not generate image');
+   const file=new File([blob],'fantasy-time-machine-scorecard.png',{type:'image/png'});
+   if(navigator.share && navigator.canShare?.({files:[file]})){
+    try{await navigator.share({files:[file],title:'Fantasy Time Machine',text:challengeText});setShareStatus('Scorecard shared!');return;}
+    catch(e){if((e as Error).name==='AbortError')return;}
+   }
+   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   setShareStatus('Scorecard downloaded!');
+  }catch{setShareStatus('Could not create scorecard. Please try again.');}
+ }
+
+
  const canRerollYears=!!slot&&availableYears.filter(y=>poolForSlot(slot,players,y,picks).length>=5&&!drawYears.includes(y)).length>=3;
  const canRerollPlayers=!!slot&&year!==null&&poolForSlot(slot,players,year,picks).filter(p=>!options.some(o=>o.id===p.id)).length>=5;
 
@@ -218,6 +267,11 @@ export default function Home(){
        <button onClick={submit} disabled={submitted||!name.trim()}>{submitted?'SAVED':'SUBMIT SCORE'}</button>
       </div>
       {boardStatus&&<p className="muted" role="status">{boardStatus}</p>}
+      <div className="row">
+       <button className="primary" onClick={shareScorecard}>SHARE SCORECARD ↗</button>
+       <button onClick={copyChallenge}>COPY CHALLENGE LINK ↗</button>
+      </div>
+      {shareStatus&&<p className="muted" role="status">{shareStatus}</p>}
       <button className="primary" onClick={reset}>PLAY AGAIN →</button>
      </>}
     </section>
