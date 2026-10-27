@@ -25,8 +25,8 @@ export async function POST(req:NextRequest){
  let body:any;try{body=await req.json()}catch{return error('Invalid JSON')}
  if(typeof body.name!=='string'||!/^.{1,24}$/.test(body.name.trim())||/[<>\x00-\x1f]/.test(body.name))return error('Invalid name');
  if(body.mode!=='easy'&&body.mode!=='hard')return error('Invalid mode');
- if(typeof body.kicker!=='boolean'||!Array.isArray(body.picks))return error('Invalid roster');
- const expected=slots(body.kicker);
+ if(body.kicker!==false||!Array.isArray(body.picks))return error('Invalid roster');
+ const expected=slots();
  if(body.picks.length!==expected.length)return error('Incomplete roster');
  const byId=new Map((await players()).map(p=>[p.id,p]));
  const picked: {slot:Slot;player:Player}[]=[];

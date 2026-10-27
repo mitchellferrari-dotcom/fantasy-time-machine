@@ -1,5 +1,5 @@
 
-export type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K';
+export type Position = 'QB' | 'RB' | 'WR' | 'TE';
 
 export type Slot =
   | 'QB'
@@ -8,8 +8,7 @@ export type Slot =
   | 'WR1'
   | 'WR2'
   | 'TE'
-  | 'FLEX'
-  | 'K';
+  | 'FLEX';
 
 export type Player = {
   id: string;
@@ -33,7 +32,6 @@ export const caps: Record<Position, number> = {
   RB: 32,
   WR: 50,
   TE: 32,
-  K: 32,
 };
 
 export const years = Array.from(
@@ -41,7 +39,7 @@ export const years = Array.from(
   (_, i) => 2000 + i
 );
 
-export function slots(kicker: boolean): Slot[] {
+export function slots(): Slot[] {
   return [
     'QB',
     'RB1',
@@ -50,7 +48,6 @@ export function slots(kicker: boolean): Slot[] {
     'WR2',
     'TE',
     'FLEX',
-    ...(kicker ? ['K'] : []),
   ] as Slot[];
 }
 

@@ -1,4 +1,3 @@
-
 'use client';
 import {useEffect,useState} from 'react';
 import {Player,Pick,Slot,slots,sample,poolForSlot,totalPoints,estimatedRecord,dayKey} from '../lib/game';
@@ -7,7 +6,7 @@ type Stage='position'|'year'|'player'|'reveal'|'finished';
 type BoardEntry={name:string;score:number;date:string;mode:string;kicker:boolean};
 
 export default function Home(){
- const [players,setPlayers]=useState<Player[]>([]),[loading,setLoading]=useState(true),[mode,setMode]=useState<'easy'|'hard'>('hard'),[kicker,setKicker]=useState(false),[started,setStarted]=useState(false);
+ const [players,setPlayers]=useState<Player[]>([]),[loading,setLoading]=useState(true),[mode,setMode]=useState<'easy'|'hard'>('hard'),[started,setStarted]=useState(false);
  const [picks,setPicks]=useState<Pick[]>([]),[stage,setStage]=useState<Stage>('position'),[slot,setSlot]=useState<Slot|null>(null),[drawYears,setDrawYears]=useState<number[]>([]),[year,setYear]=useState<number|null>(null),[options,setOptions]=useState<Player[]>([]),[chosen,setChosen]=useState<Player|null>(null),[name,setName]=useState(''),[board,setBoard]=useState<BoardEntry[]>([]),[submitted,setSubmitted]=useState(false),[boardStatus,setBoardStatus]=useState(''),[shared,setShared]=useState(false);
  const [yearRerolls,setYearRerolls]=useState(2),[playerRerolls,setPlayerRerolls]=useState(2);
 
@@ -28,8 +27,7 @@ export default function Home(){
  }
 
  const availableYears=Array.from(new Set(players.map(p=>p.year))).sort((a,b)=>a-b);
- const hasKickers=availableYears.length>0&&availableYears.every(y=>players.some(p=>p.year===y&&p.position==='K'));
- const roster=slots(kicker),remaining=roster.filter(s=>!picks.some(p=>p.slot===s)),finished=stage==='finished';
+ const roster=slots(),remaining=roster.filter(s=>!picks.some(p=>p.slot===s)),finished=stage==='finished';
 
  function chooseSlot(s:Slot){
   setSlot(s);
@@ -98,10 +96,10 @@ export default function Home(){
  async function submit(){
   if(!name.trim()||!finished||submitted)return;
   setBoardStatus('Saving...');
-  const entry={name:name.trim().slice(0,24),score:+totalPoints(picks).toFixed(1),date:dayKey(),mode,kicker};
+  const entry={name:name.trim().slice(0,24),score:+totalPoints(picks).toFixed(1),date:dayKey(),mode,kicker:false};
   if(shared){
    try{
-    const r=await fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:entry.name,mode,kicker,picks:picks.map(p=>({slot:p.slot,id:p.player.id}))})});
+    const r=await fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:entry.name,mode,kicker:false,picks:picks.map(p=>({slot:p.slot,id:p.player.id}))})});
     const data=await r.json();
     if(!r.ok)throw Error(data.error||'Could not save');
     setSubmitted(true);
@@ -120,7 +118,7 @@ export default function Home(){
   setBoardStatus('Saved on this device only');
  }
 
- const leaderboard=Object.values(board.filter(e=>e.date===dayKey()&&e.mode===mode&&e.kicker===kicker).reduce<Record<string,BoardEntry>>((acc,e)=>{
+ const leaderboard=Object.values(board.filter(e=>e.date===dayKey()&&e.mode===mode&&e.kicker===false).reduce<Record<string,BoardEntry>>((acc,e)=>{
   const key=e.name.toLowerCase();
   if(!acc[key]||acc[key].score<e.score)acc[key]=e;
   return acc;
@@ -144,10 +142,6 @@ export default function Home(){
      <button className={mode==='easy'?'selected':''} onClick={()=>setMode('easy')}>EASY · STATS SHOWN</button>
      <button className={mode==='hard'?'selected':''} onClick={()=>setMode('hard')}>HARD · NO STATS</button>
     </div>
-    <label className="toggle">
-     <input type="checkbox" disabled={!hasKickers} checked={kicker} onChange={e=>setKicker(e.target.checked)}/>
-     Include kicker {!hasKickers&&'(unavailable: no verified kicker data)'}
-    </label>
     <p className="muted">Full PPR · 14-game regular season + 2 playoff rounds · Unlimited attempts</p>
     <button className="primary" disabled={loading||players.length===0} onClick={()=>setStarted(true)}>
      {loading?'LOADING DATA...':players.length?'START DRAFT':'PLAYER DATA MISSING — SEE README'}
@@ -158,7 +152,7 @@ export default function Home(){
     <section className="panel game">
      <div className="bar">
       <span>ROUND {Math.min(picks.length+1,roster.length)} / {roster.length}</span>
-      <span>{mode.toUpperCase()} · KICKER {kicker?'ON':'OFF'}</span>
+      <span>{mode.toUpperCase()}</span>
      </div>
 
      {stage==='position'&&<>
@@ -248,7 +242,7 @@ export default function Home(){
   <section className="panel leaderboard">
    <div className="bar"><span>DAILY LEADERBOARD</span><span>{dayKey()} · EASTERN</span></div>
    <h2>Today's best</h2>
-   <p className="muted">{mode.toUpperCase()} · KICKER {kicker?'ON':'OFF'} · Highest score per name</p>
+   <p className="muted">{mode.toUpperCase()} · Highest score per name</p>
    {leaderboard.length?leaderboard.map((e,i)=><div className="boardrow" key={e.name}><span>#{i+1} · {e.name}</span><strong>{e.score.toFixed(1)}</strong></div>):<p className="muted">No scores yet. Be the first.</p>}
    <p className="warning">{shared?'Shared leaderboard connected. Scores and rosters are validated, but randomized draft choices are not yet independently verified by the server.':'Local leaderboard only. Follow SETUP_V3.md to enable the shared Supabase leaderboard.'}</p>
   </section>
@@ -256,4 +250,3 @@ export default function Home(){
   <footer>FANTASY TIME MACHINE · HISTORICAL PPR · BUILT FOR THE GRIDIRON OBSESSED</footer>
  </main>;
 }
-
