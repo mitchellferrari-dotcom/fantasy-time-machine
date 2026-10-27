@@ -182,7 +182,7 @@ export default function Home(){
    if(!blob)throw new Error('Could not generate image');
    const file=new File([blob],'fantasy-time-machine-scorecard.png',{type:'image/png'});
    if(navigator.share && navigator.canShare?.({files:[file]})){
-    try{await navigator.share({files:[file]});setShareStatus('Scorecard shared! Use COPY CHALLENGE LINK to send one clickable game link.');return;}
+    try{await navigator.share({files:[file],text:challengeText});setShareStatus('Scorecard shared!');return;}
     catch(e){if((e as Error).name==='AbortError')return;}
    }
    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
