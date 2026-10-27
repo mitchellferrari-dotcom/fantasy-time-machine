@@ -76,11 +76,11 @@ export function poolForSlot(
 }
 
 // Fisher-Yates shuffle for unbiased random ordering.
-function shuffle<T>(items: T[]): T[] {
+function shuffle<T>(items: T[], random: () => number = Math.random): T[] {
   const result = [...items];
 
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
 
     [result[i], result[j]] = [result[j], result[i]];
   }
@@ -93,7 +93,8 @@ function shuffle<T>(items: T[]): T[] {
 // Other drafts remain fully random.
 export function sample<T>(
   items: T[],
-  count: number
+  count: number,
+  random: () => number = Math.random
 ): T[] {
   if (count <= 0) return [];
 
@@ -109,7 +110,7 @@ export function sample<T>(
     if (isFlexPool) {
       const guaranteed = positions.map(pos =>
         shuffle(
-          players.filter(p => p.position === pos)
+          players.filter(p => p.position === pos), random
         )[0]
       );
 
@@ -118,17 +119,17 @@ export function sample<T>(
       );
 
       const remaining = shuffle(
-        players.filter(p => !selectedIds.has(p.id))
+        players.filter(p => !selectedIds.has(p.id)), random
       ).slice(0, 2);
 
       return shuffle([
         ...guaranteed,
         ...remaining,
-      ]) as T[];
+      ], random) as T[];
     }
   }
 
-  return shuffle(items).slice(0, count);
+  return shuffle(items, random).slice(0, count);
 }
 
 export function totalPoints(picks: Pick[]): number {
@@ -186,10 +187,27 @@ export function estimatedRecord(picks: Pick[]) {
   };
 }
 
-// Daily leaderboard resets at midnight Eastern.
+// Identical daily draws for identical choices and reroll counts.
+// This is deterministic, not cryptographic or tamper-proof.
+export function dailyRandom(seed: string): () => number {
+  let state = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    state ^= seed.charCodeAt(i);
+    state = Math.imul(state, 16777619);
+  }
+  return () => {
+    state += 0x6D2B79F5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Daily leaderboard resets at midnight Central (America/Chicago).
 export function dayKey(): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
+    timeZone: 'America/Chicago',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

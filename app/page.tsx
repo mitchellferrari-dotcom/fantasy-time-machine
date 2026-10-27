@@ -1,14 +1,33 @@
 'use client';
 import {useEffect,useState} from 'react';
-import {Player,Pick,Slot,slots,sample,poolForSlot,totalPoints,estimatedRecord,dayKey} from '../lib/game';
+import {Player,Pick,Slot,slots,sample,poolForSlot,totalPoints,estimatedRecord,dayKey,dailyRandom} from '../lib/game';
 
 type Stage='position'|'year'|'player'|'reveal'|'finished';
 type BoardEntry={name:string;score:number;date:string;mode:string;kicker:boolean};
 
 export default function Home(){
- const [players,setPlayers]=useState<Player[]>([]),[loading,setLoading]=useState(true),[mode,setMode]=useState<'easy'|'hard'>('hard'),[started,setStarted]=useState(false);
+ const [players,setPlayers]=useState<Player[]>([]),[loading,setLoading]=useState(true),[mode,setMode]=useState<'unlimited'|'daily'>('unlimited'),[started,setStarted]=useState(false);
  const [picks,setPicks]=useState<Pick[]>([]),[stage,setStage]=useState<Stage>('position'),[slot,setSlot]=useState<Slot|null>(null),[drawYears,setDrawYears]=useState<number[]>([]),[year,setYear]=useState<number|null>(null),[options,setOptions]=useState<Player[]>([]),[chosen,setChosen]=useState<Player|null>(null),[name,setName]=useState(''),[board,setBoard]=useState<BoardEntry[]>([]),[submitted,setSubmitted]=useState(false),[boardStatus,setBoardStatus]=useState(''),[shared,setShared]=useState(false);
  const [yearRerolls,setYearRerolls]=useState(2),[playerRerolls,setPlayerRerolls]=useState(2);
+ const [dailyDate,setDailyDate]=useState(dayKey());
+ const [dailyLocked,setDailyLocked]=useState(false);
+ useEffect(()=>{
+  const check=()=>{const today=dayKey();setDailyDate(today);setDailyLocked(localStorage.getItem('ftm-daily-started-'+today)==='1');};
+  check();const interval=setInterval(check,30000);return ()=>clearInterval(interval);
+ },[]);
+ const isDaily=mode==='daily';
+ const dailyDraw=(kind:string, index:number, slotValue:Slot, selectedYear:number|null=null)=>dailyRandom(
+  [dailyDate,kind,index,slotValue,selectedYear??'',...picks.map(p=>p.slot+':'+p.player.id)].join('|')
+ );
+ function startDraft(){
+  if(isDaily){
+   const key='ftm-daily-started-'+dayKey();
+   if(localStorage.getItem(key)==='1'){setDailyLocked(true);return;}
+   localStorage.setItem(key,'1');setDailyLocked(true);
+  }
+  setStarted(true);
+ }
+
 
  useEffect(()=>{fetch('/players.json').then(r=>r.json()).then((p:Player[])=>setPlayers(p)).catch(()=>{}).finally(()=>setLoading(false));refreshBoard()},[]);
 
@@ -31,7 +50,7 @@ export default function Home(){
 
  function chooseSlot(s:Slot){
   setSlot(s);
-  setDrawYears(sample(availableYears.filter(y=>poolForSlot(s,players,y,picks).length>=5),3));
+  setDrawYears(sample(availableYears.filter(y=>poolForSlot(s,players,y,picks).length>=5),3,isDaily?dailyDraw('years',0,s):Math.random));
   setStage('year');
  }
 
@@ -40,7 +59,7 @@ export default function Home(){
   const eligible=availableYears.filter(y=>poolForSlot(slot,players,y,picks).length>=5);
   const alternatives=eligible.filter(y=>!drawYears.includes(y));
   if(alternatives.length<3)return;
-  setDrawYears(sample(alternatives,3));
+  setDrawYears(sample(alternatives,3,isDaily?dailyDraw('years',3-yearRerolls,slot):Math.random));
   setYearRerolls(n=>n-1);
  }
 
@@ -49,7 +68,7 @@ export default function Home(){
   const pool=poolForSlot(slot,players,y,picks);
   if(pool.length<5)return;
   setYear(y);
-  setOptions(sample(pool,5));
+  setOptions(sample(pool,5,isDaily?dailyDraw('players',0,slot,y):Math.random));
   setStage('player');
  }
 
@@ -58,7 +77,7 @@ export default function Home(){
   const pool=poolForSlot(slot,players,year,picks);
   const alternatives=pool.filter(p=>!options.some(o=>o.id===p.id));
   if(alternatives.length<5)return;
-  setOptions(sample(alternatives,5));
+  setOptions(sample(alternatives,5,isDaily?dailyDraw('players',3-playerRerolls,slot,year):Math.random));
   setPlayerRerolls(n=>n-1);
  }
 
@@ -116,7 +135,7 @@ export default function Home(){
   setBoardStatus('Saved on this device only');
  }
 
- const leaderboard=Object.values(board.filter(e=>e.date===dayKey()&&e.mode===mode&&e.kicker===false).reduce<Record<string,BoardEntry>>((acc,e)=>{
+ const leaderboard=Object.values(board.filter(e=>(mode==='daily'?e.date===dailyDate:true)&&e.mode===mode&&e.kicker===false).reduce<Record<string,BoardEntry>>((acc,e)=>{
   const key=e.name.toLowerCase();
   if(!acc[key]||acc[key].score<e.score)acc[key]=e;
   return acc;
@@ -142,12 +161,12 @@ export default function Home(){
    ctx.fillStyle='#f2c65c';ctx.fillRect(0,0,1080,16);
    ctx.textBaseline='top';
    ctx.fillStyle='#f2c65c';ctx.font='bold 35px Arial';ctx.fillText('FANTASY TIME MACHINE',65,75);
-   ctx.fillStyle='#ffffff';ctx.font='bold 66px Arial';ctx.fillText('MY ALL-TIME DRAFT',65,155);
-   ctx.fillStyle='#b8c7dc';ctx.font='28px Arial';ctx.fillText(mode.toUpperCase()+' MODE  •  FULL PPR',65,255);
+   ctx.fillStyle='#ffffff';ctx.font='bold 66px Arial';ctx.fillText(isDaily?'MY DAILY DRAFT':'MY ALL-TIME DRAFT',65,155);
+   ctx.fillStyle='#b8c7dc';ctx.font='28px Arial';ctx.fillText((isDaily?'DAILY HARD':'UNLIMITED HARD')+'  •  FULL PPR',65,255);
    ctx.fillStyle='#f2c65c';ctx.font='bold 90px Arial';ctx.fillText(finalScore.toFixed(1),65,325);
    ctx.fillStyle='#b8c7dc';ctx.font='27px Arial';ctx.fillText('TOTAL FANTASY POINTS',65,425);
    ctx.fillStyle='#ffffff';ctx.font='bold 44px Arial';ctx.fillText(`PROJECTED RECORD: ${record.wins}-${record.losses}`,65,505);
-   if(myRank>0){ctx.fillStyle='#f2c65c';ctx.font='bold 31px Arial';ctx.fillText(`TODAY\'S RANK: #${myRank}`,65,575);}
+   if(myRank>0){ctx.fillStyle='#f2c65c';ctx.font='bold 31px Arial';ctx.fillText(`${isDaily?'TODAY\'S':'ALL-TIME'} RANK: #${myRank}`,65,575);}
    ctx.fillStyle='#b8c7dc';ctx.font='bold 26px Arial';ctx.fillText('MY LINEUP',65,650);
    let y=715;
    for(const pick of roster.map(s=>picks.find(p=>p.slot===s)).filter((p):p is Pick=>!!p)){
@@ -184,14 +203,14 @@ export default function Home(){
 
   {!started?
    <section className="panel intro">
-    <h2>Set your rules</h2>
+    <h2>Choose your challenge</h2>
     <div className="row">
-     <button className={mode==='easy'?'selected':''} onClick={()=>setMode('easy')}>EASY · STATS SHOWN</button>
-     <button className={mode==='hard'?'selected':''} onClick={()=>setMode('hard')}>HARD · NO STATS</button>
+     <button className={mode==='unlimited'?'selected':''} onClick={()=>setMode('unlimited')}>UNLIMITED HARD</button>
+     <button className={mode==='daily'?'selected':''} onClick={()=>setMode('daily')}>DAILY HARD</button>
     </div>
-    <p className="muted">Full PPR · 14-game regular season + 2 playoff rounds · Unlimited attempts</p>
-    <button className="primary" disabled={loading||players.length===0} onClick={()=>setStarted(true)}>
-     {loading?'LOADING DATA...':players.length?'START DRAFT':'PLAYER DATA MISSING — SEE README'}
+    <p className="muted">Full PPR · 2 year rerolls + 2 player rerolls · {isDaily?"Same daily draws for everyone · One attempt per browser each Central Time day":"Fresh random draft every time · Unlimited attempts"}</p>
+    <button className="primary" disabled={loading||players.length===0||(isDaily&&dailyLocked)} onClick={startDraft}>
+     {loading?'LOADING DATA...':!players.length?'PLAYER DATA MISSING — SEE README':isDaily&&dailyLocked?'DAILY ATTEMPT USED — COME BACK TOMORROW':'START DRAFT'}
     </button>
    </section>
   :<>
@@ -199,7 +218,7 @@ export default function Home(){
     <section className="panel game">
      <div className="bar">
       <span>ROUND {Math.min(picks.length+1,roster.length)} / {roster.length}</span>
-      <span>{mode.toUpperCase()}</span>
+      <span>{isDaily?"DAILY HARD":"UNLIMITED HARD"}</span>
      </div>
 
      {stage==='position'&&<>
@@ -231,7 +250,7 @@ export default function Home(){
         <span>
          <strong>{p.name}</strong>
          <small>{p.team} · {p.position} · {p.year}</small>
-         {mode==='easy'&&<small className="stats">{Object.entries(p.stats).map(([k,v])=>`${k}: ${v.toLocaleString()}`).join(' · ')}</small>}
+         
         </span>
         <b>SELECT →</b>
        </button>)}
@@ -272,7 +291,7 @@ export default function Home(){
        <button onClick={copyChallenge}>COPY CHALLENGE LINK ↗</button>
       </div>
       {shareStatus&&<p className="muted" role="status">{shareStatus}</p>}
-      <button className="primary" onClick={reset}>PLAY AGAIN →</button>
+      <button className="primary" onClick={reset}>{isDaily?'BACK TO MODES →':'PLAY AGAIN →'}</button>
      </>}
     </section>
 
@@ -292,11 +311,11 @@ export default function Home(){
   </>}
 
   <section className="panel leaderboard">
-   <div className="bar"><span>DAILY LEADERBOARD</span><span>{dayKey()} · EASTERN</span></div>
-   <h2>Today's best</h2>
-   <p className="muted">{mode.toUpperCase()} · Highest score per name</p>
+   <div className="bar"><span>{isDaily?"DAILY LEADERBOARD":"ALL-TIME LEADERBOARD"}</span><span>{isDaily?dailyDate+" · CENTRAL":"UNLIMITED HARD"}</span></div>
+   <h2>{isDaily?"Today's scores":"All-time best"}</h2>
+   <p className="muted">{isDaily?"One scored entry per name per day":"Highest score per name"}</p>
    {leaderboard.length?leaderboard.map((e,i)=><div className="boardrow" key={e.name}><span>#{i+1} · {e.name}</span><strong>{e.score.toFixed(1)}</strong></div>):<p className="muted">No scores yet. Be the first.</p>}
-   <p className="warning">{shared?'Shared leaderboard connected. Scores and rosters are validated, but randomized draft choices are not yet independently verified by the server.':'Local leaderboard only. Follow SETUP_V3.md to enable the shared Supabase leaderboard.'}</p>
+   <p className="warning">{shared?'Shared leaderboard connected. Scores and rosters are validated, but daily draft choices are deterministic in the browser but are not independently verified by the server.':'Local leaderboard only. Follow SETUP_V3.md to enable the shared Supabase leaderboard.'}</p>
   </section>
 
   <footer>FANTASY TIME MACHINE · HISTORICAL PPR · BUILT FOR THE GRIDIRON OBSESSED</footer>
