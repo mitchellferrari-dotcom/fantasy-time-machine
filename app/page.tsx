@@ -150,10 +150,10 @@ export default function Home(){
    if(myRank>0){ctx.fillStyle='#f2c65c';ctx.font='bold 31px Arial';ctx.fillText(`TODAY\'S RANK: #${myRank}`,65,575);}
    ctx.fillStyle='#b8c7dc';ctx.font='bold 26px Arial';ctx.fillText('MY LINEUP',65,650);
    let y=715;
-   for(const pick of picks){
+   for(const pick of roster.map(s=>picks.find(p=>p.slot===s)).filter((p):p is Pick=>!!p)){
     ctx.fillStyle='#263c59';ctx.fillRect(55,y-10,970,76);
     ctx.fillStyle='#f2c65c';ctx.font='bold 26px Arial';ctx.fillText(pick.slot,75,y+8);
-    ctx.fillStyle='#ffffff';ctx.font='bold 27px Arial';ctx.fillText(`${pick.player.name} (${pick.player.year})`,195,y+8);
+    ctx.fillStyle='#ffffff';ctx.font='bold 27px Arial';ctx.fillText(`${pick.player.name} (${pick.player.year}) · ${pick.player.position}${pick.player.rank}`,195,y+8,665);
     ctx.fillStyle='#ffffff';ctx.textAlign='right';ctx.font='bold 25px Arial';ctx.fillText(pick.player.points.toFixed(1),1000,y+8);ctx.textAlign='left';
     y+=86;
    }
@@ -163,7 +163,7 @@ export default function Home(){
    if(!blob)throw new Error('Could not generate image');
    const file=new File([blob],'fantasy-time-machine-scorecard.png',{type:'image/png'});
    if(navigator.share && navigator.canShare?.({files:[file]})){
-    try{await navigator.share({files:[file],title:'Fantasy Time Machine',text:challengeText,url:challengeUrl});setShareStatus('Scorecard shared!');return;}
+    try{await navigator.share({files:[file]});setShareStatus('Scorecard shared! Use COPY CHALLENGE LINK to send one clickable game link.');return;}
     catch(e){if((e as Error).name==='AbortError')return;}
    }
    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
