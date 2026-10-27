@@ -32,8 +32,6 @@ export default function Home(){
  function chooseSlot(s:Slot){
   setSlot(s);
   setDrawYears(sample(availableYears.filter(y=>poolForSlot(s,players,y,picks).length>=5),3));
-  setYearRerolls(2);
-  setPlayerRerolls(2);
   setStage('year');
  }
 
