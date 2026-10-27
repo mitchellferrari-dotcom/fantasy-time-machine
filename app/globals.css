@@ -1,0 +1,116 @@
+
+/* Fantasy Time Machine — Reroll Buttons */
+.game button.quiet:has(+ .quiet),
+.game .playerlist ~ button.quiet {
+  background: #eda84d;
+  color: #17251d;
+  border: 2px solid #eda84d;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.game button.quiet:has(+ .quiet):hover:not(:disabled),
+.game .playerlist ~ button.quiet:hover:not(:disabled) {
+  background: #ffc477;
+  transform: translateY(-2px);
+}
+
+.game button.quiet:has(+ .quiet):disabled,
+.game .playerlist ~ button.quiet:disabled {
+  background: #555;
+  border-color: #555;
+  color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Fantasy Time Machine — Reroll Buttons */
+.game button.quiet:has(+ .quiet),
+.game .playerlist ~ button.quiet {
+  background: #eda84d;
+  color: #17251d;
+  border: 2px solid #eda84d;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.game button.quiet:has(+ .quiet):hover:not(:disabled),
+.game .playerlist ~ button.quiet:hover:not(:disabled) {
+  background: #ffc477;
+  transform: translateY(-2px);
+}
+
+.game button.quiet:has(+ .quiet):disabled,
+.game .playerlist ~ button.quiet:disabled {
+  background: #555;
+  border-color: #555;
+  color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Fantasy Time Machine — Reroll Buttons */
+.game button.quiet:has(+ .quiet),
+.game .playerlist ~ button.quiet {
+  background: #eda84d;
+  color: #17251d;
+  border: 2px solid #eda84d;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.game button.quiet:has(+ .quiet):hover:not(:disabled),
+.game .playerlist ~ button.quiet:hover:not(:disabled) {
+  background: #ffc477;
+  transform: translateY(-2px);
+}
+
+.game button.quiet:has(+ .quiet):disabled,
+.game .playerlist ~ button.quiet:disabled {
+  background: #555;
+  border-color: #555;
+  color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Dedicated reroll buttons */
+.game button.reroll-button {
+  display: block !important;
+  width: 100% !important;
+  margin: 20px 0 12px !important;
+  padding: 16px 24px !important;
+  background: #eda84d !important;
+  color: #17251d !important;
+  border: 2px solid #eda84d !important;
+  border-radius: 10px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  cursor: pointer;
+}
+
+.game button.reroll-button:hover:not(:disabled) {
+  background: #ffc477 !important;
+}
+
+.game button.reroll-button:disabled {
+  background: #555 !important;
+  border-color: #555 !important;
+  color: #aaa !important;
+  cursor: not-allowed;
+}
