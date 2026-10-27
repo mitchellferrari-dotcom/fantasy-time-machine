@@ -125,12 +125,12 @@ export default function Home(){
  const record=estimatedRecord(picks);
  const finalScore=totalPoints(picks);
  const myRank=submitted ? leaderboard.findIndex(e=>e.name.toLowerCase()===name.trim().toLowerCase() && Math.abs(e.score-finalScore)<0.11)+1 : 0;
- const challengeText=`I scored ${finalScore.toFixed(1)} PPR points and went ${record.wins}-${record.losses} in Fantasy Time Machine! Can you beat my draft?`;
  const challengeUrl='https://www.fantasytimemachine.org/';
+ const challengeText=`I scored ${finalScore.toFixed(1)} PPR points and went ${record.wins}-${record.losses} in Fantasy Time Machine! Can you beat my draft?\nPlay here: ${challengeUrl}`;
  const [shareStatus,setShareStatus]=useState('');
 
  async function copyChallenge(){
-  try{await navigator.clipboard.writeText(`${challengeText}\n${challengeUrl}`);setShareStatus('Challenge copied!');}
+  try{await navigator.clipboard.writeText(challengeText);setShareStatus('Challenge copied!');}
   catch{setShareStatus('Copy unavailable. Share this link: '+challengeUrl);}
  }
 
@@ -163,7 +163,7 @@ export default function Home(){
    if(!blob)throw new Error('Could not generate image');
    const file=new File([blob],'fantasy-time-machine-scorecard.png',{type:'image/png'});
    if(navigator.share && navigator.canShare?.({files:[file]})){
-    try{await navigator.share({files:[file],title:'Fantasy Time Machine',text:challengeText});setShareStatus('Scorecard shared!');return;}
+    try{await navigator.share({files:[file],title:'Fantasy Time Machine',text:challengeText,url:challengeUrl});setShareStatus('Scorecard shared!');return;}
     catch(e){if((e as Error).name==='AbortError')return;}
    }
    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
